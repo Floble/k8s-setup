@@ -1,0 +1,17 @@
+---
+- hosts: masters
+  tasks:
+  - name: copy the certificates and key to each node
+    copy:
+      src: "{{ item }}"
+      dest: "{{ item }}"
+    with_items:
+      - ca.pem
+      - kubernetes.pem
+      - kubernetes-key.pem
+
+- hosts: localhost
+  vars:
+  - lifecycle: cleanup
+  roles:
+  - cfssl

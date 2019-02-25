@@ -1,0 +1,21 @@
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
+kubernetesVersion: stable
+apiServerCertSANs:
+{% for haproxy in groups['haproxies'] %}
+- {{ hostvars[haproxy]['ansible_host'] }}
+{% endfor %}
+controlPlaneEndpoint: "{% for haproxy in groups['haproxies'] %}{{ hostvars[haproxy]['ansible_host'] }}:6443{% if not loop.last %},{% endif %}{% endfor %}"
+etcd:
+  external:
+    endpoints:
+  {% for master in groups['masters'] %}
+  - https://{{ hostvars[master]['ansible_host'] }}:2379
+  {% endfor %}
+  caFile: /etc/etcd/ca.pem
+    certFile: /etc/etcd/kubernetes.pem
+    keyFile: /etc/etcd/kubernetes-key.pem
+networking:
+  podSubnet: 172.16.1.0/24
+apiServerExtraArgs:
+  apiserver-count: "3"

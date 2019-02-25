@@ -1,0 +1,5 @@
+---
+- import_playbook: setup_nodes.yml
+- import_playbook: setup_client_tools.yml
+- import_playbook: install_certificates.yml
+- import_playbook: setup_kubernetes_cluster.yml

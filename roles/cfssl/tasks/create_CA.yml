@@ -1,0 +1,30 @@
+---
+- name: create the certificate authority configuration file
+  template:
+    src: ca-config.json.j2
+    dest: ca-config.json
+  when: lifecycle == "install"
+
+- name: create the certificate authority signing request configuration file
+  template:
+    src: ca-csr.json.j2
+    dest: ca-csr.json
+  when: lifecycle == "install"
+
+- name: generate the certificate authority certificate and private key
+  shell: cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+  when: lifecycle == "install"
+
+- name: create the certificate signing request configuration file
+  template:
+    src: kubernetes-csr.json.j2
+    dest: kubernetes-csr.json
+  when: lifecycle == "install"
+
+- name: generate the certificate and private key
+  shell: cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -hostname={% for master in groups['masters'] %}{{ hostvars[master]['ansible_host'] }}{% if not loop.last %},{% endif %}{% endfor %},{% for haproxy in groups['haproxies'] %}{{ hostvars[haproxy]['ansible_host'] }}{% if not loop.last %},{% endif %}{% endfor %},127.0.0.1,kubernetes.default -profile=kubernetes kubernetes-csr.json | cfssljson -bare kubernetes
+  when: lifecycle == "install"
+
+- name: cleanup
+  shell: rm ca* && rm kubernetes*
+  when: lifecycle == "cleanup"

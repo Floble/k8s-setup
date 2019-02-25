@@ -1,0 +1,7 @@
+---
+- name: install the latest version of Docker
+  become: yes
+  apt:
+    name: docker.io
+    state: latest
+    update_cache: true

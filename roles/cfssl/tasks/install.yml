@@ -1,0 +1,24 @@
+---
+- name: download binaries
+  get_url:
+    url: "https://pkg.cfssl.org/R1.2/{{ item }}_linux-amd64"
+    dest: "/tmp/{{ item }}"
+    mode: +x
+  with_items:
+    - cfssl
+    - cfssljson
+
+- name: install binaries
+  become: true
+  shell: "mv /tmp/{{ item }} /usr/local/bin/{{ item }}"
+  with_items:
+    - cfssl
+    - cfssljson
+
+- name: remove binaries from /tmp
+  file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  with_items:
+    - cfssl
+    - cfssljson

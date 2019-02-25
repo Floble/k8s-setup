@@ -1,0 +1,17 @@
+---
+- name: create .kube directory
+  become: yes
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    mode: 0755
+  when: lifecycle == "setup"
+
+- name: copy admin.conf to user's kube config
+  become: yes
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+    remote_src: yes
+    owner: ubuntu
+  when: lifecycle == "setup"

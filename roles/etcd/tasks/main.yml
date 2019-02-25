@@ -1,0 +1,14 @@
+---
+- import_tasks: install.yml
+- include: configure.yml host="{{ ansible_default_ipv4.address }}"
+
+- name: start Etcd, enable it to start at boot time and reload the daemon configuration
+  become: yes
+  systemd:
+    name: etcd
+    state: started
+    daemon_reload: yes
+    enabled: yes
+
+- pause:
+    minutes: 2

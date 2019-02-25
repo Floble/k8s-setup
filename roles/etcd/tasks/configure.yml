@@ -1,0 +1,33 @@
+---
+- name: copy etcd.service template to /tmp
+  template:
+    src: etcd.service.j2
+    dest: /tmp/etcd.service.j2
+
+- name: create etcd.service template dynamically
+  blockinfile:
+    path: /tmp/etcd.service.j2
+    insertafter: "Service"
+    content: |
+      ExecStart=/usr/local/bin/etcd \
+        --name {{ host }} \
+        --cert-file=/etc/etcd/kubernetes.pem \
+        --key-file=/etc/etcd/kubernetes-key.pem \
+        --peer-cert-file=/etc/etcd/kubernetes.pem \
+        --peer-key-file=/etc/etcd/kubernetes-key.pem \
+        --trusted-ca-file=/etc/etcd/ca.pem \
+        --peer-trusted-ca-file=/etc/etcd/ca.pem \
+        --peer-client-cert-auth=true \
+        --client-cert-auth=true \
+        --initial-advertise-peer-urls=https://{{ host }}:2380 \
+        --listen-peer-urls=https://{{ host }}:2380 \
+        --listen-client-urls=https://{{ host }}:2379,http://127.0.0.1:2379 \
+        --advertise-client-urls=https://{{ host }}:2379 \
+        --initial-cluster-token=etcd-cluster-0 \
+        --initial-cluster={% for master in groups['masters'] %}{{ hostvars[master]['ansible_host'] }}=https://{{ hostvars[master]['ansible_host'] }}:2380{% if not loop.last %},{% endif %}{% endfor %} \
+        --initial-cluster-state=new \
+        --data-dir=/var/lib/etcd
+
+- name: move the etcd.service template to /etc/systemd/system/etcd.service
+  become: yes
+  shell: "mv /tmp/etcd.service.j2 /etc/systemd/system/etcd.service"

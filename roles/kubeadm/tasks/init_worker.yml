@@ -1,0 +1,5 @@
+---
+- name: join cluster
+  become: yes
+  shell: "{{ hostvars['master1'].join_command }}"
+  when: lifecycle == "init-worker"

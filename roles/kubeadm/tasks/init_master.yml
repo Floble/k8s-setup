@@ -1,0 +1,11 @@
+---
+- name: create the configuration file for kubeadm
+  template:
+    src: config.yaml.j2
+    dest: /tmp/config.yaml
+  when: lifecycle == "init-master"
+
+- name: initialize the machine as a master node
+  become: yes
+  shell: kubeadm init --config=/tmp/config.yaml
+  when: lifecycle == "init-master"

@@ -1,0 +1,19 @@
+---
+- name: install the latest version of HAProxy
+  become: yes
+  apt:
+    name: haproxy
+    state: latest
+    update_cache: true
+
+- name: move haproxy config to remote node
+  become: yes
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+
+- name: restart service haproxy
+  become: yes
+  systemd:
+    name: haproxy
+    state: restarted

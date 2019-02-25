@@ -1,0 +1,40 @@
+---
+- name: create a configuration directory for Etcd
+  become: yes
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/etcd
+    - /var/lib/etcd
+
+- name: move the certificates to the configuration directory
+  become: yes
+  shell: "mv /home/ubuntu/{{ item }} /etc/etcd/"
+  with_items:
+    - ca.pem
+    - kubernetes.pem
+    - kubernetes-key.pem
+
+- name: cleanup
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_fileglob:
+    - "/home/ubuntu/ca*"
+    - "/home/ubuntu/kubernetes*"
+
+- name: download the Etcd binaries
+  get_url:
+    url: https://github.com/coreos/etcd/releases/download/v3.3.9/etcd-v3.3.9-linux-amd64.tar.gz
+    dest: /tmp/etcd-v3.3.9-linux-amd64.tar.gz
+
+- name: Extract the Etcd archive
+  unarchive:
+    src: /tmp/etcd-v3.3.9-linux-amd64.tar.gz
+    dest: /tmp/
+    remote_src: yes
+
+- name: move the Etcd binaries to /usr/local/bin
+  become: yes
+  shell: "mv /tmp/etcd-v3.3.9-linux-amd64/etcd* /usr/local/bin/"

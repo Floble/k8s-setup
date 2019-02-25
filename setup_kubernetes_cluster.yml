@@ -1,0 +1,111 @@
+---
+- hosts: haproxies
+  roles:
+    - haproxy
+
+- hosts: masters
+  vars:
+    - lifecycle: install
+  roles:
+    - docker
+    - kubeadm
+    - kubelet
+    - kubectl
+
+- hosts: workers
+  vars:
+    - lifecycle: install
+  roles:
+    - docker
+    - kubeadm
+    - kubelet
+
+- hosts: masters
+  roles:
+    - etcd
+
+- hosts: master_primary
+  vars:
+    - lifecycle: init-master
+  roles:
+    - kubeadm
+
+- hosts: master_primary
+  tasks:
+  - name: find the certificates to copy to the other master nodes
+    become: yes
+    shell: (cd /etc/kubernetes/pki/; find . -maxdepth 99 -type f) | cut -d'/' -f2
+    register: files_to_copy
+  - name: set the certificates to copy
+    set_fact:
+      certificates: "{{ files_to_copy.stdout_lines }}"
+  - name: copy the certificates to the localhost
+    become: yes
+    fetch:
+      src: "/etc/kubernetes/pki/{{ item }}"
+      dest: "/tmp/kubernetes/pki/{{ item }}"
+      flat: yes
+    with_items:
+      - "{{ files_to_copy.stdout_lines }}"
+
+- hosts: masters_secondary
+  tasks:
+  - name: create the /home/ubuntu/pki directory
+    become: yes
+    file:
+      path: /home/ubuntu/pki
+      state: directory
+  - name: copy the certificates to the masters
+    become: yes
+    copy:
+      src: "/tmp/kubernetes/pki/{{ item }}"
+      dest: "/home/ubuntu/pki/{{ item }}"
+    with_items:
+      - "{{ hostvars['master1'].certificates }}"
+  - name: remove the apiserver.crt and apiserver.key
+    become: yes
+    shell: "rm -rf /home/ubuntu/pki/apiserver.*"
+  - name: move the certificates to the /etc/kubernetes directory
+    become: yes
+    shell: "mv /home/ubuntu/pki /etc/kubernetes/"
+
+- hosts: masters_secondary
+  vars:
+    - lifecycle: init-master
+  roles:
+    - kubeadm
+
+- hosts: localhost
+  tasks:
+  - name: cleanup
+    file:
+      path: /tmp/kubernetes
+      state: absent
+
+- hosts: master_primary
+  tasks:
+  - name: get join command
+    become: yes
+    shell: kubeadm token create --print-join-command
+    register: join_command_raw
+  - name: set join command
+    become: yes
+    set_fact:
+      join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+- hosts: workers
+  vars:
+    - lifecycle: init-worker
+  roles:
+    - kubeadm
+
+- hosts: masters
+  vars:
+    - lifecycle: setup
+  roles:
+    - kubectl
+
+- hosts: master_primary
+  roles:
+    - weavenet
+    - nginx

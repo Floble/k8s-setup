@@ -1,0 +1,27 @@
+[haproxies]
+haproxy1 ansible_host=<ip_address_1> ansible_user=<user_1>
+...
+haproxyn ansible_host=<ip_address_n> ansible_user=<user_n>
+
+[masters]
+master1 ansible_host=<ip_address_1> ansible_user=<user_1>
+...
+mastern ansible_host=<ip_address_n> ansible_user=<user_n>
+
+[master_primary]
+master1 ansible_host=<ip_address_1> ansible_user=<user_1>
+
+[masters_secondary]
+master2 ansible_host=<ip_address_2> ansible_user=<user_2>
+...
+mastern ansible_host=<ip_address_n> ansible_user=<user_n>
+
+[workers]
+worker1 ansible_host=<ip_address_1> ansible_user=<user_1>
+...
+workern ansible_host=<ip_address_n> ansible_user=<user_n>
+
+[all:vars]
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_private_key_file=<path_to_your_private_key>
+ansible_ssh_common_args=' -o ProxyCommand="ssh -i <path_to_your_private_key> -W %h:%p <user>@<public_SSH_gateway>"'

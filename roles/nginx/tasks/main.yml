@@ -1,0 +1,6 @@
+---
+- name: deploy nginx
+  shell: "kubectl run nginx --image=nginx --port 80"
+
+- name: expose nginx
+  shell: "kubectl expose deploy nginx --port 80 --target-port 80 --type NodePort"
